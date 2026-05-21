@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1776161649159,
-      "tag": "0000_opposite_nuke",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1776169613483,
-      "tag": "0001_dazzling_lorna_dane",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1776182226981,
-      "tag": "0002_damp_champions",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1776260462409,
-      "tag": "0003_wild_tattoo",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1776525896697,
-      "tag": "0004_funny_slyde",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1777028954335,
-      "tag": "0005_wandering_ozymandias",
+      "when": 1779377431029,
+      "tag": "0000_lumpy_tinkerer",
       "breakpoints": true
     }
   ]
