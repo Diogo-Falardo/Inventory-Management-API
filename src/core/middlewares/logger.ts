@@ -1,12 +1,10 @@
-import { LogLayer, ConsoleTransport } from "loglayer";
-import type { LogLayerTransportParams } from "loglayer";
+import { LogLayer } from "loglayer";
+import { getSimplePrettyTerminal } from "@loglayer/transport-simple-pretty-terminal";
+
 export const log = new LogLayer({
-  transport: new ConsoleTransport({
-    logger: console,
-    dateField: "timestamp",
-    appendObjectData: false,
-    levelFn: (level) => level.toUpperCase(),
+  transport: getSimplePrettyTerminal({
+    runtime: "node",
+    viewMode: "expanded",
+    flattenNestedObjects: false,
   }),
 });
-
-log.withMetadata;
