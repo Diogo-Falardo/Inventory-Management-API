@@ -1,182 +1,185 @@
 import { Hono } from "hono";
-import { z } from "zod";
 import { sValidator } from "@hono/standard-validator";
 import { describeRoute } from "hono-openapi";
-import { CREATE_UserSchema, LoginSchema } from "./user.schema";
 import {
   createUser,
-  deleteUser,
-  getUserInfo,
   loginUser,
-} from "./user.controller";
-import { validateUUID } from "../../core/middlewares/validators";
-import { log } from "../../core/middlewares/logger";
+  userId,
+} from "../../db/schemas/users/users.dto";
+import {
+  user_createUser,
+  user_deleteUser,
+  user_getUserInfo,
+  user_loginUser,
+} from "./user.function";
 
 export const userRoutes = new Hono().basePath("/user");
 
 userRoutes.post(
-  "create",
+  "register",
   describeRoute({
-    summary: "Create user",
-    description: `Creates a new user
-  - Password is encrypted using **argon2** 
-
-  **required** to use the application
-    `,
+    operationId: "registerUser",
+    summary: "Register a new user",
+    description:
+      "Creates a new user account with the provided email and password. Fails if the email is already registered. The password is securely encrypted before storage.",
     tags: ["User", "Authentication"],
     requestBody: {
+      required: true,
+      description: "User registration credentials.",
       content: {
         "application/json": {
           schema: {
             type: "object",
+            required: ["email", "password"],
             properties: {
               email: {
                 type: "string",
                 format: "email",
+                description: "User's unique email address.",
                 example: "user@example.com",
               },
-              password: { type: "string", example: "123Ul!" },
-            },
-            required: ["email", "password"],
-          },
-        },
-      },
-      required: true,
-    },
-    responses: {
-      403: {
-        description: "Email already in use",
-      },
-      200: {
-        description: "User Created",
-      },
-    },
-  }),
-  sValidator("json", CREATE_UserSchema),
-  async (c) => {
-    const user = c.req.valid("json");
-
-    log.withMetadata({ user: user }).info("Creating user");
-    const create = await createUser(user);
-    return c.json(create, 201);
-  },
-);
-
-userRoutes.delete(
-  "delete",
-  describeRoute({
-    summary: "Delete user",
-    description: `Deletes an user **by the corresponding user id**
-  
-  - Only admins should be allowed to use this in your software.  
-  ***This never should be a set as a permission***
-
-    `,
-    tags: ["User", "Admin"],
-    requestBody: {
-      content: {
-        "application/json": {
-          schema: {
-            properties: {
-              userId: {
+              password: {
                 type: "string",
-                example: "uuid",
+                description:
+                  "User's password. Must be at least 6 characters and contain uppercase, lowercase, number, and special character.",
+                example: "StrongPass1!",
               },
             },
-            required: ["userId"],
           },
         },
       },
-      required: true,
     },
     responses: {
-      200: {
-        description: "User Deleted",
-      },
+      201: { description: "User registered successfully." },
+      400: { description: "Invalid request body or missing required fields." },
+      409: { description: "Email is already registered." },
+      500: { description: "Unexpected server error while registering user." },
     },
   }),
-  sValidator("json", z.object({ userId: z.string() })),
+  sValidator("json", createUser),
   async (c) => {
-    const id = c.req.valid("json");
-    const validatedUserId = validateUUID(id.userId);
-
-    log.info(`Deleting user: ${validatedUserId}`);
-
-    const result = await deleteUser(validatedUserId);
-    return c.json({
-      deleted_user: result,
-    });
+    const dto = c.req.valid("json");
+    const newUser = await user_createUser(dto);
+    return c.json({ id: newUser.id, email: newUser.email }, 201);
   },
 );
 
 userRoutes.post(
   "login",
   describeRoute({
-    summary: "Login user",
-    description: `- Logins an User and **returns the corresponding user id**`,
+    operationId: "loginUser",
+    summary: "Authenticate a user",
+    description:
+      "Authenticates a user by email and password. Returns the userId on success. The password is verified against the stored encrypted hash.",
     tags: ["User", "Authentication"],
     requestBody: {
+      required: true,
+      description: "User login credentials.",
       content: {
         "application/json": {
           schema: {
             type: "object",
+            required: ["email", "password"],
             properties: {
               email: {
                 type: "string",
                 format: "email",
+                description: "Registered email address.",
                 example: "user@example.com",
               },
-              password: { type: "string", example: "123Ul!" },
+              password: {
+                type: "string",
+                description: "Account password.",
+                example: "StrongPass1!",
+              },
             },
-            required: ["email", "password"],
           },
         },
       },
-      required: true,
     },
     responses: {
-      200: {
-        description: "User logged with success",
-      },
-      404: {
-        description: "Email not found",
-      },
-      403: {
-        description: "User inserted wrong password",
-      },
+      200: { description: "Authentication successful. Returns the userId." },
+      400: { description: "Invalid request body or missing required fields." },
+      401: { description: "Invalid credentials." },
+      404: { description: "User not found." },
+      500: { description: "Unexpected server error while authenticating." },
     },
   }),
-  sValidator("json", LoginSchema),
+  sValidator("json", loginUser),
   async (c) => {
-    const { email, password } = c.req.valid("json");
-
-    log.info(`Authentication start for: ${email}`);
-    return c.json({ userId: await loginUser(email, password) });
+    const dto = c.req.valid("json");
+    const authUserId = await user_loginUser(dto);
+    return c.json({ userId: authUserId });
   },
 );
 
 userRoutes.get(
-  "user-info/:userId",
+  "info/:userId",
   describeRoute({
-    summary: "Info user",
-    description: `
-  - Returns the **email** from an user
-    `,
+    operationId: "getUserInfo",
+    summary: "Get user information",
+    description:
+      "Returns the email address of a user by their unique identifier. Only the email is returned, never sensitive data such as the password.",
     tags: ["User"],
+    parameters: [
+      {
+        name: "userId",
+        in: "path",
+        required: true,
+        description: "The UUID of the user.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "b7e1a2c4-1234-4f56-8a9b-abcdef123456",
+        },
+      },
+    ],
     responses: {
-      200: {
-        description: "User email",
-      },
-      404: {
-        description: "User not found",
-      },
+      200: { description: "Returns the user's email address." },
+      401: { description: "Authentication required." },
+      404: { description: "User not found." },
+      500: { description: "Unexpected server error while fetching user." },
     },
   }),
   async (c) => {
     const { userId } = c.req.param();
-    const validatedUserId = validateUUID(userId);
+    const email = await user_getUserInfo(userId);
+    return c.json({ email });
+  },
+);
 
-    log.info(`Inicitaing fetching of user: ${userId}`);
-    return c.json({ user_email: await getUserInfo(validatedUserId) });
+userRoutes.delete(
+  "delete/:userId",
+  describeRoute({
+    operationId: "deleteUser",
+    summary: "Delete a user",
+    description:
+      "Permanently deletes a user account by their unique identifier. This action cannot be undone. Only admins should be allowed to call this endpoint.",
+    tags: ["User", "Admin"],
+    parameters: [
+      {
+        name: "userId",
+        in: "path",
+        required: true,
+        description: "The UUID of the user to delete.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "b7e1a2c4-1234-4f56-8a9b-abcdef123456",
+        },
+      },
+    ],
+    responses: {
+      200: { description: "User deleted successfully." },
+      401: { description: "Authentication required." },
+      403: { description: "Not authorized to delete users." },
+      404: { description: "User not found." },
+      500: { description: "Unexpected server error while deleting user." },
+    },
+  }),
+  async (c) => {
+    const { userId } = c.req.param();
+    const deleted = await user_deleteUser(userId);
+    return c.json({ deleted: deleted.id });
   },
 );

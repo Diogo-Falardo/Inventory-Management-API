@@ -181,3 +181,21 @@ export async function checkIfPermissionExistByPermissionName(
     });
   }
 }
+
+/**
+ *  Validates if the permission exist
+ * - If Exists: return permission_id
+ * - If not exists: throws an error
+ * @param id
+ * @returns permissionId
+ */
+export async function checkIfPermissionExistsByPermissionId(id: string) {
+  log
+    .withMetadata({ permission_id: id })
+    .info("checkIfPermissionExistsByPermissionId");
+
+  const check = await adminService.getPermissionById(id);
+  if (check) {
+    return check.id;
+  }
+}
