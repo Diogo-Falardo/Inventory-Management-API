@@ -8,7 +8,6 @@ import { userRoutes } from "./modules/users/user.route";
 import { HTTPException } from "hono/http-exception";
 import { pteroRoutes } from "./modules/pteros/ptero.route";
 import { log } from "./core/middlewares/logger";
-import { adminRoutes } from "./core/admin/admin.route";
 import { routerAdmin } from "./modules/admin/admin.route";
 
 const app = new Hono();
@@ -24,8 +23,7 @@ app.use(
 
 app.route("/", routerAdmin);
 app.route("/v1", healthRoutes);
-// app.route("/admin/", adminRoutes);
-// app.route("/", userRoutes);
+app.route("/", userRoutes);
 // app.route("/", pteroRoutes);
 
 app.get(

@@ -1,3 +1,4 @@
+import { password } from "bun";
 import { z } from "zod";
 
 export const usersSchema = z.object({
@@ -8,3 +9,12 @@ export const usersSchema = z.object({
     .min(6)
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@!%*?&]).{6,}$/),
 });
+
+export const outUserSchema = usersSchema
+  .pick({
+    id: true,
+    email: true,
+  })
+  .extend({
+    password: z.string(),
+  });

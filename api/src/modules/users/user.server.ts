@@ -3,10 +3,13 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../../db/db.index";
 import { table_users } from "../../db/schema";
-import { usersSchema } from "../../db/schemas/users/users.schema";
+import {
+  outUserSchema,
+  usersSchema,
+} from "../../db/schemas/users/users.schema";
 import {
   type_createUser,
-  type_userSchema,
+  type_outUser,
 } from "../../db/schemas/users/users.types";
 import { log } from "../../core/middlewares/logger";
 import {
@@ -17,7 +20,7 @@ import {
 import { HttpStatus } from "../../core/utils/statusCode";
 
 class userServer {
-  async createUser(dto: type_createUser): Promise<type_userSchema> {
+  async createUser(dto: type_createUser): Promise<type_outUser> {
     try {
       const encryptedPassword = await argon2.hash(dto.password);
 
@@ -36,7 +39,7 @@ class userServer {
       log
         .withMetadata({ userId: user.id })
         .info("userServer.createUser: user created");
-      return usersSchema.parse(user);
+      return outUserSchema.parse(user);
     } catch (error) {
       throwError({
         error,
@@ -46,7 +49,7 @@ class userServer {
     }
   }
 
-  async deleteUserById(userId: string): Promise<type_userSchema> {
+  async deleteUserById(userId: string): Promise<type_outUser> {
     try {
       const [deletedUser] = await db
         .delete(table_users)
@@ -62,7 +65,7 @@ class userServer {
         });
       }
 
-      return usersSchema.parse(deletedUser);
+      return outUserSchema.parse(deletedUser);
     } catch (error) {
       throwError({
         error,
@@ -72,7 +75,7 @@ class userServer {
     }
   }
 
-  async getUserById(userId: string): Promise<type_userSchema | null> {
+  async getUserById(userId: string): Promise<type_outUser | null> {
     try {
       const [user] = await db
         .select()
@@ -82,7 +85,7 @@ class userServer {
 
       if (!user) return null;
 
-      return usersSchema.parse(user);
+      return outUserSchema.parse(user);
     } catch (error) {
       throwError({
         error,
@@ -92,7 +95,7 @@ class userServer {
     }
   }
 
-  async getUserByEmail(email: string): Promise<type_userSchema | null> {
+  async getUserByEmail(email: string): Promise<type_outUser | null> {
     try {
       const [user] = await db
         .select()
@@ -102,7 +105,7 @@ class userServer {
 
       if (!user) return null;
 
-      return usersSchema.parse(user);
+      return outUserSchema.parse(user);
     } catch (error) {
       throwError({
         error,
@@ -152,7 +155,7 @@ export async function checkIfEmailAlreadyExists(email: string) {
  */
 export async function checkIfUserExistsByEmail(
   email: string,
-): Promise<type_userSchema> {
+): Promise<type_outUser> {
   log.withMetadata({ email }).info("checkIfUserExistsByEmail");
   const user = await userService.getUserByEmail(email);
   if (!user) {

@@ -1,5 +1,3 @@
-import { HTTPException } from "hono/http-exception";
-import { log } from "../../core/middlewares/logger";
 import {
   type_createPermission,
   type_updatePermission,
