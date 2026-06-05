@@ -1,6 +1,10 @@
 # deps
 node_modules/
+.env
 
 # obsidian pluggins
 documentation_files/.obsidian/
+documentation_files/
 
+# private skills
+skills/
