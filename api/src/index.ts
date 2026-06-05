@@ -1,0 +1,86 @@
+import { Hono } from "hono";
+import { logger as honoLogger } from "hono/logger";
+import { cors } from "hono/cors";
+import { Scalar } from "@scalar/hono-api-reference";
+import { openAPIRouteHandler, describeRoute } from "hono-openapi";
+import { healthRoutes } from "./modules/health/health.routes";
+import { userRoutes } from "./modules/users/user.route";
+import { HTTPException } from "hono/http-exception";
+import { pteroRoutes } from "./modules/pteros/ptero.route";
+import { log } from "./core/middlewares/logger";
+import { adminRoutes } from "./core/admin/admin.route";
+import { routerAdmin } from "./modules/admin/admin.route";
+
+const app = new Hono();
+
+// free for everyone to access because this is not production
+app.use(
+  "*",
+  honoLogger((str) => {
+    log.info(str);
+  }),
+  cors(),
+);
+
+app.route("/", routerAdmin);
+app.route("/v1", healthRoutes);
+// app.route("/admin/", adminRoutes);
+// app.route("/", userRoutes);
+// app.route("/", pteroRoutes);
+
+app.get(
+  "/",
+  describeRoute({
+    summary: "Root endpoint",
+    description: "Returns a welcome message as plain text",
+    responses: {
+      200: {
+        description: "success response",
+        content: {
+          "text/plain": {
+            schema: {
+              type: "string",
+              example: "bloop hono template!",
+            },
+          },
+        },
+      },
+    },
+  }),
+  (c) => {
+    return c.text("Ptero Project");
+  },
+);
+
+app.get(
+  "/doc",
+  openAPIRouteHandler(app, {
+    documentation: {
+      info: {
+        title: "Ptero Project API",
+        version: "1.0.0",
+        description:
+          "For more Information check: https://github.com/Diogo-Falardo/Pteros-Business-Management-API-Multi-Tool",
+      },
+      servers: [{ url: "http://localhost:3000", description: "Local Server" }],
+    },
+  }),
+);
+
+app.get("/scalar", Scalar({ url: "/doc" }));
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    // extracting error
+    const status = err.status;
+    const message = err.message || "unkown error";
+
+    console.log(message);
+
+    return c.json({ error: message }, status);
+  }
+  console.error(err);
+  return c.text("Internal Server Error", 500);
+});
+
+export default app;
