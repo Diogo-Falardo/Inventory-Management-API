@@ -1,0 +1,139 @@
+import { HTTPException } from "hono/http-exception";
+import { throwError } from "../../core/middlewares/error";
+import { log } from "../../core/middlewares/logger";
+import { db } from "../../db/db.index";
+import {
+  table_business_roles,
+  table_business_roles_permissions,
+} from "../../db/schema";
+import {
+  type_permissionId,
+  type_permissionSchema,
+} from "../../db/schemas/permissions/permission.types";
+import { HttpStatus } from "../../core/utils/statusCode";
+import { and, eq } from "drizzle-orm";
+import { permissionsSchema } from "../../db/schemas/permissions/permission.schema";
+
+class businessRolesServer {
+  /**
+   * create a role inside of a business
+   * @param businessId
+   * @param name
+   */
+  async createRole(businessId: string, name: string): Promise<string> {
+    try {
+      const [role] = await db
+        .insert(table_business_roles)
+        .values({ businessId, name })
+        .returning();
+
+      log.withMetadata({ role }).info("role created");
+
+      return role.id;
+    } catch (error) {
+      throwError({ error, logError: "businessRolesServer.createRole" });
+    }
+  }
+  async deleteRole(id: string) {}
+  async updateRole(id: string) {}
+}
+
+class businessRolesPermissionServer {
+  async addPermissionToRole(roleId: string, permissionId: string) {}
+  /**
+   * Given a list of permissions update the role id with that permission list
+   *
+   *
+   * @param roleId
+   * @param listPermissions
+   */
+  async updatePermissionOfRole(
+    roleId: string,
+    listPermissions: Array<type_permissionId>,
+  ) {
+    try {
+      if (listPermissions.length === 0) {
+        log
+          .withMetadata({ listPermissions })
+          .error("no permissions were found");
+        throw new HTTPException(HttpStatus.BAD_REQUEST, {
+          message: "0 permissions to set!",
+        });
+      }
+
+      const checkIfRoleHasPermissions = await this.permissionsOfRole(roleId);
+      // if permissions do not have any role, insert all roles from the list provided
+      if (checkIfRoleHasPermissions.length === 0) {
+        for (const perm of listPermissions) {
+          await db
+            .insert(table_business_roles_permissions)
+            .values({ roleId, permissionId: perm.id });
+        }
+        log
+          .withMetadata({ roleId, listPermissions })
+          .info("role was empty of permissions, new permissions set");
+      } else {
+        const currentSet = new Set(checkIfRoleHasPermissions.map((p) => p.id));
+        const newSet = new Set(listPermissions.map((p) => p.id));
+
+        // permissions to add
+        const permissionsToAdd = listPermissions.filter(
+          (p) => !currentSet.has(p.id),
+        );
+
+        // permissions to remove
+        const permissionsToRemove = checkIfRoleHasPermissions.filter(
+          (p) => !newSet.has(p.id),
+        );
+
+        for (const permission of permissionsToAdd) {
+          await db
+            .insert(table_business_roles_permissions)
+            .values({ roleId, permissionId: permission.id });
+        }
+
+        for (const permission of permissionsToRemove) {
+          await db
+            .delete(table_business_roles_permissions)
+            .where(
+              and(
+                eq(table_business_roles_permissions.roleId, roleId),
+                eq(
+                  table_business_roles_permissions.permissionId,
+                  permission.id,
+                ),
+              ),
+            );
+        }
+      }
+
+      log.withMetadata({ roleId }).info("permission list updated");
+    } catch (error) {
+      throwError({
+        error,
+        logError: "businessRolesPermissionServer.updatePermissionOfRole",
+      });
+    }
+  }
+  async permissionsOfRole(
+    roleId: string,
+  ): Promise<Array<type_permissionSchema>> {
+    try {
+      const permissions = await db
+        .select()
+        .from(table_business_roles_permissions)
+        .where(eq(table_business_roles_permissions.roleId, roleId));
+
+      return permissionsSchema.array().parse(permissions);
+    } catch (error) {
+      throwError({
+        error,
+        logError: "businessRolesPermissionServer.permissionsOfRole",
+      });
+    }
+  }
+}
+
+export const businessRolesService = new businessRolesServer();
+export const businessRolesPermissionService =
+  new businessRolesPermissionServer();

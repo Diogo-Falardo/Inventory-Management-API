@@ -6,9 +6,9 @@ import { openAPIRouteHandler, describeRoute } from "hono-openapi";
 import { healthRoutes } from "./modules/health/health.routes";
 import { userRoutes } from "./modules/users/user.route";
 import { HTTPException } from "hono/http-exception";
-import { pteroRoutes } from "./modules/pteros/ptero.route";
 import { log } from "./core/middlewares/logger";
 import { routerAdmin } from "./modules/admin/admin.route";
+import { businessRoutes } from "./modules/business/business.route";
 
 const app = new Hono();
 
@@ -25,6 +25,7 @@ app.route("/", routerAdmin);
 app.route("/v1", healthRoutes);
 app.route("/", userRoutes);
 // app.route("/", pteroRoutes);
+app.route("/", businessRoutes);
 
 app.get(
   "/",
