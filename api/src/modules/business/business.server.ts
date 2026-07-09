@@ -28,7 +28,7 @@ class businessServer {
       );
       const allPermissions = await adminService.getAllPermissions();
 
-      log.withMetadata({ allPermissions }).info("permissions");
+      // log.withMetadata({ allPermissions }).info("permissions");
 
       await businessRolesPermissionService.updatePermissionOfRole(
         ownerRole,

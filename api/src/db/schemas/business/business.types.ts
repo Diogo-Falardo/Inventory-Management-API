@@ -6,6 +6,7 @@ import {
 } from "./business.dto";
 import {
   businessRolesPermissionsSchema,
+  businessRolesSchema,
   businessSchema,
 } from "./business.schema";
 
@@ -16,3 +17,4 @@ export type type_memberInfo = z.infer<typeof memberInfoSchema>;
 export type type_rolesPermission = z.infer<
   typeof businessRolesPermissionsSchema
 >;
+export type type_role = z.infer<typeof businessRolesSchema>

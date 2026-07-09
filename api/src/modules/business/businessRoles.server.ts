@@ -11,8 +11,8 @@ import { HttpStatus } from "../../core/utils/statusCode";
 import { and, eq } from "drizzle-orm";
 import { permissionsSchema } from "../../db/schemas/permissions/permission.schema";
 import { businessMemebersService } from "./businessMembers.server";
-import { type_rolesPermission } from "../../db/schemas/business/business.types";
-import { businessRolesPermissionsSchema } from "../../db/schemas/business/business.schema";
+import { type_role, type_rolesPermission } from "../../db/schemas/business/business.types";
+import { businessRolesPermissionsSchema, businessRolesSchema } from "../../db/schemas/business/business.schema";
 
 class businessRolesServer {
   /**
@@ -34,12 +34,24 @@ class businessRolesServer {
       throwError({ error, logError: "businessRolesServer.createRole" });
     }
   }
-  async deleteRole(id: string) {}
-  async updateRole(id: string) {}
+  async deleteRole(id: string) { }
+  async updateRole(id: string) { }
+
+  async getRoleById(id: string): Promise<type_role | null> {
+    try {
+      const [role] = await db.select().from(table_business_roles).where(eq(table_business_roles.id, id))
+
+      if (!role) return null
+
+      return businessRolesSchema.parse(role)
+    } catch (error) {
+      throwError({ error, logError: "businessRolesServer.getRoleById" });
+    }
+  }
 }
 
 class businessRolesPermissionServer {
-  async addPermissionToRole(roleId: string, permissionId: string) {}
+  async addPermissionToRole(roleId: string, permissionId: string) { }
   /**
    * Given a list of permissions update the role id with that permission list
    *
