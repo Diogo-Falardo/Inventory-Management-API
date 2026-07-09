@@ -43,3 +43,11 @@ export async function admin_deletePermission(id: string) {
   await checkIfPermissionExistsByPermissionId(id);
   return await adminService.deletePermissionById(id);
 }
+
+/**
+  * Fetches all the permssions available on the database
+  * @returns permssions
+  */
+export async function admin_listPermissions() {
+  return await adminService.getAllPermissions()
+}

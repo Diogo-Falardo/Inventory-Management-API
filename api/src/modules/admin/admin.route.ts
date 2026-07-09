@@ -3,12 +3,12 @@ import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import {
   createPermission,
-  permissionId,
   updatePermission,
 } from "../../db/schemas/permissions/permission.dto";
 import {
   admin_createPermission,
   admin_deletePermission,
+  admin_listPermissions,
   admin_updatePermission,
 } from "./admin.function";
 
@@ -204,3 +204,42 @@ routerAdmin.delete(
     return c.json({ deleted: deletePermission.id });
   },
 );
+
+routerAdmin.get(
+  "get-permissionList",
+  describeRoute({
+    operationId: "adminListPermissions",
+    summary: "Retrieve all global permissions",
+    description: `
+Returns a complete list of all permissions stored in the system.
+
+- Only admins should access this endpoint.
+- Useful for management dashboards, role assignment screens, and auditing tools.
+- The response includes every permission currently registered in the database.
+    `,
+    tags: ["Admin", "Permissions"],
+    responses: {
+      200: {
+        description:
+          "List of all permissions successfully retrieved from the database.",
+      },
+      401: {
+        description: "Authentication required to access this endpoint.",
+      },
+      403: {
+        description: "User is not authorized to view global permissions.",
+      },
+      404: {
+        description: "There are no permissions available"
+      },
+      500: {
+        description:
+          "Unexpected server error while retrieving the permissions list.",
+      },
+    },
+  }),
+  async (c) => {
+    return c.json(await admin_listPermissions());
+  },
+);
+

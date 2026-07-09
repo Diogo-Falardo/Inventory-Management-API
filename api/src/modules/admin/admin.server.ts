@@ -159,6 +159,29 @@ class adminServer {
       });
     }
   }
+
+  async getAllPermissions(): Promise<Array<type_permissionSchema>> {
+    try {
+      const permissions = await db.select().from(table_permissions)
+
+      if (permissions.length === 0) {
+        log
+          .withMetadata(permissions)
+          .error("permissions not found");
+        throw new HTTPException(HttpStatus.NOT_FOUND, {
+          message: GENERIC_NOT_FOUND_MESSAGE,
+        });
+      }
+
+      return permissionsSchema.array().parse(permissions)
+    } catch (error) {
+      throwError({
+        error,
+        logError: "adminServer.getAllPermissions",
+        exceptionErrorMessage: GENERIC_SERVER_ERROR_MESSAGE,
+      });
+    }
+  }
 }
 export const adminService = new adminServer();
 
