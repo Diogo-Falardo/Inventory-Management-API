@@ -10,7 +10,7 @@ export const businessSchema = z.object({
   inviteLink: z.string().optional().nullable(),
 });
 
-export const businessRoles = z.object({
+export const businessRolesSchema = z.object({
   id: z.uuid(),
   businessId: z.uuid(),
   name: z
@@ -19,14 +19,14 @@ export const businessRoles = z.object({
     .max(255, { message: "Business role name max lenght of 255 characters!" }),
 });
 
-export const businessMembers = z.object({
+export const businessMembersSchema = z.object({
   id: z.uuid(),
   businessId: z.uuid(),
   userId: z.uuid(),
   roleId: z.uuid(),
 });
 
-export const businessRolesPermissions = z.object({
+export const businessRolesPermissionsSchema = z.object({
   id: z.uuid(),
   roleId: z.uuid(),
   permissionId: z.uuid(),

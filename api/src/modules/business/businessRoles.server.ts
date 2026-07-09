@@ -6,13 +6,13 @@ import {
   table_business_roles,
   table_business_roles_permissions,
 } from "../../db/schema";
-import {
-  type_permissionId,
-  type_permissionSchema,
-} from "../../db/schemas/permissions/permission.types";
+import { type_permissionId } from "../../db/schemas/permissions/permission.types";
 import { HttpStatus } from "../../core/utils/statusCode";
 import { and, eq } from "drizzle-orm";
 import { permissionsSchema } from "../../db/schemas/permissions/permission.schema";
+import { businessMemebersService } from "./businessMembers.server";
+import { type_rolesPermission } from "../../db/schemas/business/business.types";
+import { businessRolesPermissionsSchema } from "../../db/schemas/business/business.schema";
 
 class businessRolesServer {
   /**
@@ -117,14 +117,14 @@ class businessRolesPermissionServer {
   }
   async permissionsOfRole(
     roleId: string,
-  ): Promise<Array<type_permissionSchema>> {
+  ): Promise<Array<type_rolesPermission>> {
     try {
       const permissions = await db
         .select()
         .from(table_business_roles_permissions)
         .where(eq(table_business_roles_permissions.roleId, roleId));
 
-      return permissionsSchema.array().parse(permissions);
+      return businessRolesPermissionsSchema.array().parse(permissions);
     } catch (error) {
       throwError({
         error,
@@ -137,3 +137,44 @@ class businessRolesPermissionServer {
 export const businessRolesService = new businessRolesServer();
 export const businessRolesPermissionService =
   new businessRolesPermissionServer();
+
+/**
+ * How to validate if an user has the required permissions
+ *
+ * from the userId we need to fetch what role is assigned to that user
+ * from the roleId that that user has we need to check if it has the permissionId
+ *
+ * @returns boolean or execpetions
+ */
+export async function checkIfUserHasPermission(
+  userId: string,
+  businessId: string,
+  permissionId: string,
+): Promise<boolean> {
+  log
+    .withMetadata({ userId, businessId, permissionId })
+    .info("checkIfUserHasPermission");
+  const userRole = await businessMemebersService.checkMember(
+    userId,
+    businessId,
+  );
+
+  if (!userRole)
+    throw new HTTPException(HttpStatus.NOT_FOUND, {
+      message: "User not found!",
+    });
+
+  const permissionsOfUserRole =
+    await businessRolesPermissionService.permissionsOfRole(userRole.roleId);
+
+  const matchPermission = permissionsOfUserRole.find(
+    (p) => p.permissionId === permissionId,
+  );
+  if (!matchPermission) {
+    throw new HTTPException(HttpStatus.FORBIDDEN, {
+      message: "User doesn't have required permission",
+    });
+  }
+
+  return true;
+}

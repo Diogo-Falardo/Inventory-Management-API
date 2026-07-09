@@ -3,7 +3,6 @@ import { throwError } from "../../core/middlewares/error";
 import { log } from "../../core/middlewares/logger";
 import { db } from "../../db/db.index";
 import { table_business } from "../../db/schema";
-import { global_GetAllPermissions } from "../admin/admin.server";
 import {
   businessRolesPermissionService,
   businessRolesService,
@@ -13,6 +12,7 @@ import { HTTPException } from "hono/http-exception";
 import { HttpStatus } from "../../core/utils/statusCode";
 import { businessSchema } from "../../db/schemas/business/business.schema";
 import { businessMemebersService } from "./businessMembers.server";
+import { adminService } from "../admin/admin.server";
 
 class businessServer {
   async createBusiness(userId: string, name: string) {
@@ -26,7 +26,7 @@ class businessServer {
         business.id,
         "Owner",
       );
-      const allPermissions = await global_GetAllPermissions();
+      const allPermissions = await adminService.getAllPermissions();
 
       log.withMetadata({ allPermissions }).info("permissions");
 
@@ -45,8 +45,8 @@ class businessServer {
       });
     }
   }
-  async deleteBusiness(id: string) {}
-  async updateBusiness(id: string) {}
+  async deleteBusiness(id: string) { }
+  async updateBusiness(id: string) { }
 
   async getBusinessById(id: string): Promise<type_businessSchema | null> {
     try {
@@ -84,7 +84,7 @@ export async function checkIfBusinessExistById(
   if (!business) {
     log.withMetadata({ id }).error("business not found");
     throw new HTTPException(HttpStatus.NOT_FOUND, {
-      message: "Business not found!s",
+      message: "Business not found!",
     });
   }
 

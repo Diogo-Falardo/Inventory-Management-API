@@ -10,6 +10,8 @@ import { HttpStatus } from "../utils/statusCode";
 import { log } from "./logger";
 import { checkIfUserExistsById } from "../../modules/users/user.server";
 import { checkIfBusinessExistById } from "../../modules/business/business.server";
+import { checkIfUserHasPermission } from "../../modules/business/businessRoles.server";
+import { userId } from "../../db/schemas/users/users.dto";
 
 /**
  * Generic uuid validator
@@ -72,7 +74,7 @@ type businessValidator = {
   checkUserExists?: boolean;
   checkBusinessExist?: boolean;
   checkUserIsMember?: boolean;
-  checkUserHasPermissions?: string; // permission id
+  checkUserHasPermission?: string; // permission id
 };
 
 export async function validateBusiness(options: businessValidator) {
@@ -92,6 +94,11 @@ export async function validateBusiness(options: businessValidator) {
   if (options.checkBusinessExist && options.businessId) {
     await checkIfBusinessExistById(options.businessId);
     log.info("business: ok");
+  }
+
+  if (options.checkUserHasPermission && options.userId && options.businessId) {
+    await checkIfUserHasPermission(options.userId, options.businessId, options.checkUserHasPermission)
+    log.info("checkUserHasPermission: ok");
   }
 }
 
