@@ -4,6 +4,22 @@ The Manager is a modular API designed to manage any type of business: Store, man
 
 The primary goal is to provide a clean, scalable backend foundation for user management, inventory, operations, and internal tooling.
 
+> [!WARNING]
+>  **Security Notice — Work in Progress**
+>
+> This project is under active development and **not production-ready as-is**.
+>
+> Several endpoints currently accept the requesting user's `userId` as an explicit
+> route parameter or body field, instead of deriving it from an authenticated
+> session or JWT. This is a temporary simplification for development/testing and
+> **must not be used in production** — as it stands, any client could pass an
+> arbitrary `userId` and impersonate another user.
+>
+> Before deploying this API in any real-world or production environment, ensure that:
+> - The requesting user's identity is extracted from a verified JWT or session
+>   (e.g. `req.user.id` via auth middleware), never from client-supplied params.
+> - All endpoints that mutate state validate the authenticated user's permissions
+>   server-side, independent of any `userId` passed in the request.
 ---
 
 ## Technical Design
@@ -143,5 +159,5 @@ The system provides default roles like "Owner" (full control), "Viewer" (no perm
 ```
 bun install
 bun run dev
-bun drizzle-kit studio (check db)
+bun drizzle-kit studio (check db) -> requires DATABASE_URL in ENV
 ```
