@@ -8,6 +8,7 @@ import { type_permissionId } from "../../db/schemas/permissions/permission.types
 import { businessService } from "./business.server";
 import { businessRolesPermissionService, businessRolesService } from "./businessRoles.server";
 import { HttpStatus } from "../../core/utils/statusCode";
+import { adminService } from "../admin/admin.server";
 
 export const business_createBusiness = async (
   userId: string,
@@ -71,4 +72,40 @@ export const business_upsertRolePermissions = async (
   if (!validateRole) throw new HTTPException(HttpStatus.NOT_FOUND, { message: "Role was not found!" })
 
   await businessRolesPermissionService.updatePermissionOfRole(validateRole.id, listPermissions)
+}
+
+export const business_rolesInfo = async (userId: string, businessId: string) => {
+  await validateBusiness({
+    userId: userId,
+    businessId: businessId,
+    checkUserExists: true,
+    checkBusinessExist: true,
+    checkUserIsMember: true,
+  });
+
+  // note: business has always at least one role: "Owner"
+  const businessRoles = await businessRolesService.getRoles(businessId)
+
+  const rolesPermissions = await Promise.all(businessRoles.map(async role => {
+    const permissions = await businessRolesPermissionService.permissionsOfRole(role.id)
+
+    const permissionsInfo = await Promise.all(permissions.map(async permission => {
+      const permissionInfo = await adminService.getPermissionById(permission.permissionId)
+      return {
+        permissionId: permissionInfo.id,
+        permissionName: permissionInfo.permission,
+        permissionDescription: permissionInfo.description,
+      }
+    }))
+
+    return {
+      roleId: role.id,
+      roleName: role.name,
+      permissions: permissionsInfo
+    }
+  }),
+  );
+
+
+  return rolesPermissions
 }

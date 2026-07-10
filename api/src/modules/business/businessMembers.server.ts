@@ -5,6 +5,8 @@ import { db } from "../../db/db.index";
 import { table_business_members } from "../../db/schema";
 import { type_memberInfo } from "../../db/schemas/business/business.types";
 import { memberInfoSchema } from "../../db/schemas/business/business.dto";
+import { HTTPException } from "hono/http-exception";
+import { HttpStatus } from "../../core/utils/statusCode";
 
 class businessMemebersServer {
   async addMember(userId: string, businessId: string, roleId: string) {
@@ -40,3 +42,10 @@ class businessMemebersServer {
 }
 
 export const businessMemebersService = new businessMemebersServer();
+
+
+export async function checkIfUserIsMemberOfBussiness(userId: string, businessId: string) {
+  const isMember = await businessMemebersService.checkMember(userId, businessId)
+
+  if (!isMember) throw new HTTPException(HttpStatus.FORBIDDEN, { message: "User is not member of this business!" })
+}

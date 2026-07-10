@@ -12,6 +12,7 @@ import { checkIfUserExistsById } from "../../modules/users/user.server";
 import { checkIfBusinessExistById } from "../../modules/business/business.server";
 import { checkIfUserHasPermission } from "../../modules/business/businessRoles.server";
 import { userId } from "../../db/schemas/users/users.dto";
+import { checkIfUserIsMemberOfBussiness } from "../../modules/business/businessMembers.server";
 
 /**
  * Generic uuid validator
@@ -99,6 +100,12 @@ export async function validateBusiness(options: businessValidator) {
   if (options.checkUserHasPermission && options.userId && options.businessId) {
     await checkIfUserHasPermission(options.userId, options.businessId, options.checkUserHasPermission)
     log.info("checkUserHasPermission: ok");
+  }
+
+  // check if user is member of that business
+  if (options.checkUserIsMember && options.userId && options.businessId) {
+    await checkIfUserIsMemberOfBussiness(options.userId, options.businessId)
+    log.info("checkUserIsMember: ok");
   }
 }
 

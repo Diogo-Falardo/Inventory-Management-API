@@ -9,7 +9,6 @@ import {
 import { type_permissionId } from "../../db/schemas/permissions/permission.types";
 import { HttpStatus } from "../../core/utils/statusCode";
 import { and, eq } from "drizzle-orm";
-import { permissionsSchema } from "../../db/schemas/permissions/permission.schema";
 import { businessMemebersService } from "./businessMembers.server";
 import { type_role, type_rolesPermission } from "../../db/schemas/business/business.types";
 import { businessRolesPermissionsSchema, businessRolesSchema } from "../../db/schemas/business/business.schema";
@@ -48,14 +47,21 @@ class businessRolesServer {
       throwError({ error, logError: "businessRolesServer.getRoleById" });
     }
   }
+
+  async getRoles(businessId: string): Promise<Array<type_role>> {
+    try {
+      const roles = await db.select().from(table_business_roles).where(eq(table_business_roles.businessId, businessId))
+      return businessRolesSchema.array().parse(roles)
+    } catch (error) {
+      throwError({ error, logError: "businessRolesServer.getRoles" });
+    }
+  }
 }
 
 class businessRolesPermissionServer {
   async addPermissionToRole(roleId: string, permissionId: string) { }
   /**
    * Given a list of permissions update the role id with that permission list
-   *
-   *
    * @param roleId
    * @param listPermissions
    */

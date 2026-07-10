@@ -9,6 +9,7 @@ import { validateUUID } from "../../core/middlewares/validators";
 import {
   business_createBusiness,
   business_createRole,
+  business_rolesInfo,
   business_upsertRolePermissions,
 } from "./business.controller";
 import { permissionListSchema } from "../../db/schemas/permissions/permission.dto";
@@ -272,4 +273,80 @@ Updates the full permission list of a specific role inside a business.
   },
 );
 
+businessRoutes.get(
+  "business.rolesInfo/:userId/:businessId",
+  describeRoute({
+    operationId: "businessGetRolesInfo",
+    summary: "Retrieve all roles and their permissions for a business",
+    description: `
+Returns detailed information about every role within a business, including the permissions assigned to each role.
+
+- Only members of the business can access this endpoint.
+- Useful for staff management dashboards, permission audits, and role configuration screens.
+- The response includes:
+  - Role ID and name
+  - All permissions assigned to each role
+  - Permission metadata (name, description)
+- The business is guaranteed to have at least one role ("Owner").
+- If the user is not a member of the business, access is denied.
+    `,
+    tags: ["Business", "Roles", "Permissions"],
+    parameters: [
+      {
+        name: "userId",
+        in: "path",
+        required: true,
+        description: "UUID of the user requesting the business role information.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "b7e1a2c4-1234-4f56-8a9b-abcdef123456",
+        },
+      },
+      {
+        name: "businessId",
+        in: "path",
+        required: true,
+        description: "UUID of the business whose roles will be retrieved.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "c91f2b8e-5678-4abc-9def-987654321000",
+        },
+      },
+    ],
+    responses: {
+      200: {
+        description:
+          "Roles and their associated permissions retrieved successfully.",
+      },
+      400: {
+        description: "Invalid user ID or business ID provided.",
+      },
+      401: {
+        description: "Authentication required to access this endpoint.",
+      },
+      403: {
+        description:
+          "User is not a member of the business and cannot access its role information.",
+      },
+      404: {
+        description: "Business or user not found.",
+      },
+      500: {
+        description:
+          "Unexpected server error while retrieving business role information.",
+      },
+    },
+  }),
+  async (c) => {
+    const { userId, businessId } = c.req.param();
+    const validated_userId = validateUUID(userId);
+    const validated_businessId = validateUUID(businessId);
+
+    return c.json(
+      await business_rolesInfo(validated_userId, validated_businessId),
+    );
+  },
+);
 
