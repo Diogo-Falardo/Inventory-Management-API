@@ -9,6 +9,7 @@ import { validateUUID } from "../../core/middlewares/validators";
 import {
   business_createBusiness,
   business_createRole,
+  business_roleInfo,
   business_rolesInfo,
   business_upsertRolePermissions,
 } from "./business.controller";
@@ -274,7 +275,7 @@ Updates the full permission list of a specific role inside a business.
 );
 
 businessRoutes.get(
-  "business.rolesInfo/:userId/:businessId",
+  "business-rolesInfo/:userId/:businessId",
   describeRoute({
     operationId: "businessGetRolesInfo",
     summary: "Retrieve all roles and their permissions for a business",
@@ -346,6 +347,102 @@ Returns detailed information about every role within a business, including the p
 
     return c.json(
       await business_rolesInfo(validated_userId, validated_businessId),
+    );
+  },
+);
+
+
+businessRoutes.get(
+  "business.roleInfo/:userId/:businessId/:roleId",
+  describeRoute({
+    operationId: "businessGetRoleInfo",
+    summary: "Retrieve detailed information about a specific business role",
+    description: `
+Returns complete information about a single role inside a business, including all permissions assigned to it.
+
+- Only members of the business can access this endpoint.
+- The operation validates:
+  - The user exists
+  - The business exists
+  - The user is a member of the business
+  - The role exists
+- The response includes:
+  - Role ID and name
+  - All permissions assigned to the role
+  - Permission metadata (name, description)
+- Useful for role configuration screens, permission audits, and staff management dashboards.
+    `,
+    tags: ["Business", "Roles", "Permissions"],
+    parameters: [
+      {
+        name: "userId",
+        in: "path",
+        required: true,
+        description: "UUID of the user requesting the role information.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "b7e1a2c4-1234-4f56-8a9b-abcdef123456",
+        },
+      },
+      {
+        name: "businessId",
+        in: "path",
+        required: true,
+        description: "UUID of the business where the role belongs.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "c91f2b8e-5678-4abc-9def-987654321000",
+        },
+      },
+      {
+        name: "roleId",
+        in: "path",
+        required: true,
+        description: "UUID of the role whose information will be retrieved.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "d12f3a9b-1111-4aaa-8bbb-123456789abc",
+        },
+      },
+    ],
+    responses: {
+      200: {
+        description: "Role information retrieved successfully.",
+      },
+      400: {
+        description: "Invalid user ID, business ID, or role ID provided.",
+      },
+      401: {
+        description: "Authentication required to access this endpoint.",
+      },
+      403: {
+        description:
+          "User is not a member of the business and cannot access its role information.",
+      },
+      404: {
+        description: "Role not found.",
+      },
+      500: {
+        description:
+          "Unexpected server error while retrieving the role information.",
+      },
+    },
+  }),
+  async (c) => {
+    const { userId, businessId, roleId } = c.req.param();
+    const validated_userId = validateUUID(userId);
+    const validated_businessId = validateUUID(businessId);
+    const validated_roleId = validateUUID(roleId);
+
+    return c.json(
+      await business_roleInfo(
+        validated_userId,
+        validated_businessId,
+        validated_roleId,
+      ),
     );
   },
 );

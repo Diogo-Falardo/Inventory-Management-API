@@ -109,3 +109,32 @@ export const business_rolesInfo = async (userId: string, businessId: string) => 
 
   return rolesPermissions
 }
+
+export const business_roleInfo = async (userId: string, businessId: string, roleId: string) => {
+  await validateBusiness({
+    userId: userId,
+    businessId: businessId,
+    checkUserExists: true,
+    checkBusinessExist: true,
+    checkUserIsMember: true,
+  });
+
+  const role = await businessRolesService.getRoleById(roleId)
+  if (!role) throw new HTTPException(HttpStatus.NOT_FOUND, { message: "Role was not found" })
+
+  const rolePermissions = await businessRolesPermissionService.permissionsOfRole(role.id)
+  const permissionsInfo = await Promise.all(rolePermissions.map(async permission => {
+    const permissionInfo = await adminService.getPermissionById(permission.permissionId)
+    return {
+      permissionId: permissionInfo.id,
+      permissionName: permissionInfo.permission,
+      permissionDescription: permissionInfo.description,
+    }
+  }))
+
+  return {
+    roleId: role.id,
+    roleName: role.name,
+    permissions: permissionsInfo
+  }
+}

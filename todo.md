@@ -6,6 +6,7 @@
 [] - Set owner as admin -> date: ()
 // get the role info ("name" ...) + permission list of that role
 [X] - Get role info -> date: (10 jul)
+[X] - Get all the roles info from a business-> date: (10 jul)
 
 
 
