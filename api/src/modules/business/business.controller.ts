@@ -6,9 +6,10 @@ import {
 } from "../../db/schemas/business/business.types";
 import { type_permissionId } from "../../db/schemas/permissions/permission.types";
 import { businessService } from "./business.server";
-import { businessRolesPermissionService, businessRolesService } from "./businessRoles.server";
+import { businessRolesPermissionService, businessRolesService, validateRoleId } from "./businessRoles.server";
 import { HttpStatus } from "../../core/utils/statusCode";
 import { adminService } from "../admin/admin.server";
+import { businessMemebersService, checkIfUserIsMemberOfBussiness } from "./businessMembers.server";
 
 export const business_createBusiness = async (
   userId: string,
@@ -44,6 +45,32 @@ export const business_createRole = async (
 
   return await businessRolesService.createRole(businessId, role.name);
 };
+
+/**
+ * Assigne a role to a member
+ * Permission to do this: {
+ * id:b81b3a0e-ff2c-4168-bead-b9320aa25fc1
+ * permission:Manage Staff Members
+ * description:Manage Staff Members permission allows the user to add or remove members from the system change permission and roles of the users
+ * }
+ */
+export const business_assignRole = async (userId: string, businessId: string, roleId: string, assignedUserId: string) => {
+  await validateBusiness({
+    userId: userId,
+    businessId: businessId,
+    checkUserExists: true,
+    checkBusinessExist: true,
+    checkUserHasPermission: "b81b3a0e-ff2c-4168-bead-b9320aa25fc1",
+    checkUserIsMember: true,
+  });
+
+  const role = await validateRoleId(roleId)
+
+  // note : need to add invite link first
+  // await checkIfUserIsMemberOfBussiness(assignedUserId, businessId)
+
+  await businessMemebersService.addMember(assignedUserId, businessId, role.id)
+}
 
 /**
  * Update the permissions of an role
@@ -119,8 +146,7 @@ export const business_roleInfo = async (userId: string, businessId: string, role
     checkUserIsMember: true,
   });
 
-  const role = await businessRolesService.getRoleById(roleId)
-  if (!role) throw new HTTPException(HttpStatus.NOT_FOUND, { message: "Role was not found" })
+  const role = await validateRoleId(roleId)
 
   const rolePermissions = await businessRolesPermissionService.permissionsOfRole(role.id)
   const permissionsInfo = await Promise.all(rolePermissions.map(async permission => {

@@ -196,3 +196,12 @@ export async function checkIfUserHasPermission(
 
   return true;
 }
+
+// note: NEED TO ADD THE BUSINESSID TO THIS
+export async function validateRoleId(roleId: string): Promise<type_role> {
+  const role = await businessRolesService.getRoleById(roleId)
+  if (!role) throw new HTTPException(HttpStatus.NOT_FOUND, { message: "Role was not found" })
+
+  return role
+}
+

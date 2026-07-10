@@ -7,13 +7,15 @@ import {
 } from "../../db/schemas/business/business.dto";
 import { validateUUID } from "../../core/middlewares/validators";
 import {
+  business_assignRole,
   business_createBusiness,
   business_createRole,
   business_roleInfo,
   business_rolesInfo,
   business_upsertRolePermissions,
-} from "./business.controller";
+} from "../business/business.controller"
 import { permissionListSchema } from "../../db/schemas/permissions/permission.dto";
+import { userId } from "../../db/schemas/users/users.dto";
 
 export const businessRoutes = new Hono().basePath("/business");
 
@@ -442,6 +444,126 @@ Returns complete information about a single role inside a business, including al
         validated_userId,
         validated_businessId,
         validated_roleId,
+      ),
+    );
+  },
+);
+
+businessRoutes.post(
+  "bussiness-assigneRoleToUser/:userId/:businessId/:roleId",
+  describeRoute({
+    operationId: "businessAssignRoleToUser",
+    summary: "Assign a role to a business member",
+    description: `
+Assigns an existing role to a user within a business.
+
+- Only users with the **Manage Staff Members** permission can perform this action.
+- The operation validates:
+  - The acting user exists
+  - The business exists
+  - The acting user is a member of the business
+  - The acting user has permission to manage staff members
+  - The target user is a member of the business
+  - The role exists
+- This endpoint is typically used in staff management dashboards and role assignment workflows.
+- If the role or user is not found, a corresponding error is returned.
+    `,
+    tags: ["Business", "Roles", "Members"],
+    parameters: [
+      {
+        name: "userId",
+        in: "path",
+        required: true,
+        description: "UUID of the user performing the assignment.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "b7e1a2c4-1234-4f56-8a9b-abcdef123456",
+        },
+      },
+      {
+        name: "businessId",
+        in: "path",
+        required: true,
+        description: "UUID of the business where the role assignment will occur.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "c91f2b8e-5678-4abc-9def-987654321000",
+        },
+      },
+      {
+        name: "roleId",
+        in: "path",
+        required: true,
+        description: "UUID of the role to assign to the target user.",
+        schema: {
+          type: "string",
+          format: "uuid",
+          example: "d12f3a9b-1111-4aaa-8bbb-123456789abc",
+        },
+      },
+    ],
+    requestBody: {
+      required: true,
+      description:
+        "The UUID of the user who will receive the role. Must be a member of the business.",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+                description: "UUID of the user to assign the role to.",
+                example: "e21f4c9d-2222-4ccc-9ddd-987654321abc",
+              },
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Role assigned to the user successfully.",
+      },
+      400: {
+        description:
+          "Invalid user ID, business ID, role ID, or request body provided.",
+      },
+      401: {
+        description: "Authentication required to access this endpoint.",
+      },
+      403: {
+        description:
+          "Acting user does not have permission to manage staff members.",
+      },
+      404: {
+        description: "Role or target user not found.",
+      },
+      500: {
+        description:
+          "Unexpected server error while assigning the role to the user.",
+      },
+    },
+  }),
+  sValidator("json", userId),
+  async (c) => {
+    const { userId, businessId, roleId } = c.req.param()
+    const validated_userId = validateUUID(userId);
+    const validated_businessId = validateUUID(businessId);
+    const validated_roleId = validateUUID(roleId);
+
+    const assignedUserId = c.req.valid("json");
+
+    return c.json(
+      await business_assignRole(
+        validated_userId,
+        validated_businessId,
+        validated_roleId,
+        assignedUserId.id,
       ),
     );
   },
